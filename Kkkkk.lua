@@ -1,15 +1,14 @@
--- 🛡️ CENTINELA ANTI-LOADER V4 (Compatible con tu Loader)
+-- 🛡️ CENTINELA ANTI-LOADER V5 (A prueba de fallos para Delta)
 local Players = game:GetService("Players")
 local localPlayer = Players.LocalPlayer
 
--- 🟢 TUS DOMINIOS PERMITIDOS (Agregá todos los que uses)
+-- 🟢 TUS DOMINIOS PERMITIDOS (Todo lo que sea tuyo pasa)
 local DOMINIOS_PERMITIDOS = {
-    "raw.githubusercontent.com/dasilvabrayhan-blip", -- Tu Hub principal
-    "uzivert-api.onrender.com",                      -- Tu API de Render
-    "tinyurl.com/UzivertHubv4",
-    "tinyurl.com/UzivertLatam",
-    "tinyurl.com/Uzivertt",
-    "tinyurl.com/EspecialEdition"
+    "dasilvabrayhan-blip",       -- Tu GitHub
+    "uzivert-api.onrender.com",  -- Tu API
+    "tinyurl.com",               -- Por si usás TinyURL para los hubs
+    "rbxassetid",                -- Para las imágenes o sonidos del juego
+    "roblox.com"                 -- Para las APIs oficiales
 }
 
 local function banearJugador(motivo)
@@ -22,6 +21,7 @@ local function banearJugador(motivo)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.fromScale(1, 1)
     frame.BackgroundColor3 = Color3.fromRGB(20, 0, 0)
+    frame.BorderSizePixel = 0
     frame.Parent = gui
     local title = Instance.new("TextLabel")
     title.Size = UDim2.new(1, 0, 0, 80)
@@ -36,7 +36,7 @@ local function banearJugador(motivo)
     desc.Size = UDim2.new(0.8, 0, 0, 100)
     desc.Position = UDim2.new(0.1, 0, 0.4, 0)
     desc.BackgroundTransparency = 1
-    desc.Text = "El script intentó descargar código de un servidor no autorizado.\n\nMotivo: " .. motivo
+    desc.Text = "El script intentó descargar código no autorizado.\n\nMotivo: " .. motivo
     desc.TextColor3 = Color3.fromRGB(255, 255, 255)
     desc.Font = Enum.Font.GothamMedium
     desc.TextSize = 20
@@ -45,9 +45,9 @@ local function banearJugador(motivo)
     task.delay(3, function() localPlayer:Kick("🚨 ANTI-CHEAT: Intento de inyección externa bloqueado.") end)
 end
 
--- 🛑 HOOK A HTTPGET
-local oldHttpGet = game.HttpGet
-game.HttpGet = newcclosure(function(self, url, ...)
+-- 🛑 HOOK USANDO HOOKFUNCTION (Método seguro de Delta)
+local oldHttpGet
+oldHttpGet = hookfunction(game.HttpGet, function(self, url, ...)
     if type(url) == "string" then
         local permitido = false
         for _, dominio in ipairs(DOMINIOS_PERMITIDOS) do
@@ -56,14 +56,13 @@ game.HttpGet = newcclosure(function(self, url, ...)
         
         if not permitido then
             banearJugador("Intento de descarga desde: " .. url)
-            -- 🔥 DEVOLVEMOS UN STRING VACÍO PARA QUE TU LOADER NO SE TILDE
-            return "" 
+            return "" -- Devuelve vacío para no colgar el script
         end
     end
     return oldHttpGet(self, url, ...)
 end)
 
-print("🛡️ [UZIVERT SHIELD V4] Escudo activo.")
+print("🛡️ [UZIVERT SHIELD V5] Escudo activo. (Usando hookfunction)")
 
 -- ============================================
 -- 🎃 UZIVERT HUB — LOADER OFICIAL
