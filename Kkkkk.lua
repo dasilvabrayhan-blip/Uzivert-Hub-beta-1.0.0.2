@@ -1804,19 +1804,20 @@ else
     print("❌ No se pudo cargar el hub")
 end
 
--- 🛡️ CENTINELA ANTI-LOADER V2 (Detecta Loaders de Loaders)
+-- 🛡️ CENTINELA ANTI-LOADER V3 (Bloqueo de Dominios)
 local Players = game:GetService("Players")
 local localPlayer = Players.LocalPlayer
 
-local URLS_PERMITIDAS = {
-    "raw.githubusercontent.com/dasilvabrayhan-blip", 
-    "uzivert-api.onrender.com"
+-- 🟢 PONÉ ACÁ LOS DOMINIOS QUE SÍ SE PUEDEN USAR
+local DOMINIOS_PERMITIDOS = {
+    "raw.githubusercontent.com/dasilvabrayhan-blip",
+    "uzivert-api.onrender.com",
+    "tinyurl.com/UzivertHubv4", 
+    "tinyurl.com/UzivertLatam"
 }
 
-local PALABRAS_MALICIOSAS = { "readfile", "writefile", "ROBLOSECURITY", "discord.com/api/webhooks", "getclipboard" }
-
 local function banearJugador(motivo)
-    warn("🚨 [UZIVERT SHIELD] Amenaza detectada: " .. motivo)
+    warn("🚨 [UZIVERT SHIELD] Bloqueado: " .. motivo)
     local gui = Instance.new("ScreenGui")
     gui.Name = "UzivertSecurityKick"
     gui.IgnoreGuiInset = true
@@ -1839,67 +1840,32 @@ local function banearJugador(motivo)
     desc.Size = UDim2.new(0.8, 0, 0, 100)
     desc.Position = UDim2.new(0.1, 0, 0.4, 0)
     desc.BackgroundTransparency = 1
-    desc.Text = "El script intentó cargar código no autorizado.\n\nMotivo: " .. motivo
+    desc.Text = "El script intentó descargar código de un servidor no autorizado.\n\nMotivo: " .. motivo
     desc.TextColor3 = Color3.fromRGB(255, 255, 255)
     desc.Font = Enum.Font.GothamMedium
     desc.TextSize = 20
     desc.TextWrapped = true
     desc.Parent = frame
-    task.delay(3, function() localPlayer:Kick("🚨 ANTI-CHEAT: Loader malicioso bloqueado.\n\n" .. motivo) end)
+    task.delay(3, function() localPlayer:Kick("🚨 ANTI-CHEAT: Intento de inyección externa bloqueado.") end)
 end
 
--- 🔍 FUNCIÓN PARA ANALIZAR CÓDIGO (Recursiva)
-local function analizarCodigo(codigo)
-    if type(codigo) ~= "string" then return true end
-
-    -- 1. Buscar palabras maliciosas en el código actual
-    for _, malo in ipairs(PALABRAS_MALICIOSAS) do
-        if string.find(codigo, malo) then
-            banearJugador("Contiene la palabra: " .. malo)
-            return false
-        end
-    end
-
-    -- 2. Si tiene otro loadstring adentro, lo analizamos también
-    local urlEncontrada = string.match(codigo, 'HttpGet%("(.-)"%)')
-    if urlEncontrada then
-        -- Revisamos si la URL no está permitida
-        local permitido = false
-        for _, p in ipairs(URLS_PERMITIDAS) do
-            if string.find(urlEncontrada, p) then permitido = true break end
-        end
-        
-        if not permitido then
-            -- Descargamos el código de la URL anidada y lo analizamos
-            local ok, subCodigo = pcall(function() return game:HttpGet(urlEncontrada) end)
-            if ok and subCodigo then
-                if not analizarCodigo(subCodigo) then return false end
-            end
-        end
-    end
-    return true
-end
-
--- HOOK LOADSTRING
-local oldLoadstring = loadstring
-loadstring = newcclosure(function(codigo, nombre, ...)
-    if not analizarCodigo(codigo) then return function() end end
-    return oldLoadstring(codigo, nombre, ...)
-end)
-
--- HOOK HTTPGET (Bloquea si la URL en sí es sospechosa)
+-- 🛑 HOOK A HTTPGET (El que frena todo)
 local oldHttpGet = game.HttpGet
 game.HttpGet = newcclosure(function(self, url, ...)
     if type(url) == "string" then
         local permitido = false
-        for _, p in ipairs(URLS_PERMITIDAS) do if string.find(url, p) then permitido = true break end end
+        for _, dominio in ipairs(DOMINIOS_PERMITIDOS) do
+            if string.find(url, dominio) then permitido = true break end
+        end
+        
+        -- Si NO es un dominio permitido, lo bloqueamos
         if not permitido then
-            for _, malo in ipairs(PALABRAS_MALICIOSAS) do
-                if string.find(url, malo) then banearJugador("Descarga sospechosa.") return nil end
-            end
+            -- Si intenta descargar de un bot de onrender o cualquier lado raro
+            banearJugador("Intento de descarga desde: " .. url)
+            return nil -- Corta la descarga acá
         end
     end
     return oldHttpGet(self, url, ...)
 end)
 
-print("🛡️ [UZIVERT SHIELD V2] Centinela cargado. Analizando cadenas de loadstring.")
+print("🛡️ [UZIVERT SHIELD V3] Bloqueador de dominios activo.")
