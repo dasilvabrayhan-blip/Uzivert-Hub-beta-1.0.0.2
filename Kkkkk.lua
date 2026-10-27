@@ -1,3 +1,70 @@
+-- 🛡️ CENTINELA ANTI-LOADER V4 (Compatible con tu Loader)
+local Players = game:GetService("Players")
+local localPlayer = Players.LocalPlayer
+
+-- 🟢 TUS DOMINIOS PERMITIDOS (Agregá todos los que uses)
+local DOMINIOS_PERMITIDOS = {
+    "raw.githubusercontent.com/dasilvabrayhan-blip", -- Tu Hub principal
+    "uzivert-api.onrender.com",                      -- Tu API de Render
+    "tinyurl.com/UzivertHubv4",
+    "tinyurl.com/UzivertLatam",
+    "tinyurl.com/Uzivertt",
+    "tinyurl.com/EspecialEdition"
+}
+
+local function banearJugador(motivo)
+    warn("🚨 [UZIVERT SHIELD] Bloqueado: " .. motivo)
+    local gui = Instance.new("ScreenGui")
+    gui.Name = "UzivertSecurityKick"
+    gui.IgnoreGuiInset = true
+    gui.DisplayOrder = 999999
+    if gethui then gui.Parent = gethui() else gui.Parent = localPlayer:WaitForChild("PlayerGui") end
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.fromScale(1, 1)
+    frame.BackgroundColor3 = Color3.fromRGB(20, 0, 0)
+    frame.Parent = gui
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 80)
+    title.Position = UDim2.new(0, 0, 0.3, 0)
+    title.BackgroundTransparency = 1
+    title.Text = "⚠️ LOADER MALICIOSO DETECTADO ⚠️"
+    title.TextColor3 = Color3.fromRGB(255, 50, 50)
+    title.Font = Enum.Font.GothamBlack
+    title.TextSize = 40
+    title.Parent = frame
+    local desc = Instance.new("TextLabel")
+    desc.Size = UDim2.new(0.8, 0, 0, 100)
+    desc.Position = UDim2.new(0.1, 0, 0.4, 0)
+    desc.BackgroundTransparency = 1
+    desc.Text = "El script intentó descargar código de un servidor no autorizado.\n\nMotivo: " .. motivo
+    desc.TextColor3 = Color3.fromRGB(255, 255, 255)
+    desc.Font = Enum.Font.GothamMedium
+    desc.TextSize = 20
+    desc.TextWrapped = true
+    desc.Parent = frame
+    task.delay(3, function() localPlayer:Kick("🚨 ANTI-CHEAT: Intento de inyección externa bloqueado.") end)
+end
+
+-- 🛑 HOOK A HTTPGET
+local oldHttpGet = game.HttpGet
+game.HttpGet = newcclosure(function(self, url, ...)
+    if type(url) == "string" then
+        local permitido = false
+        for _, dominio in ipairs(DOMINIOS_PERMITIDOS) do
+            if string.find(url, dominio) then permitido = true break end
+        end
+        
+        if not permitido then
+            banearJugador("Intento de descarga desde: " .. url)
+            -- 🔥 DEVOLVEMOS UN STRING VACÍO PARA QUE TU LOADER NO SE TILDE
+            return "" 
+        end
+    end
+    return oldHttpGet(self, url, ...)
+end)
+
+print("🛡️ [UZIVERT SHIELD V4] Escudo activo.")
+
 -- ============================================
 -- 🎃 UZIVERT HUB — LOADER OFICIAL
 -- ============================================
@@ -1803,69 +1870,3 @@ if ok and scriptContent then
 else
     print("❌ No se pudo cargar el hub")
 end
-
--- 🛡️ CENTINELA ANTI-LOADER V3 (Bloqueo de Dominios)
-local Players = game:GetService("Players")
-local localPlayer = Players.LocalPlayer
-
--- 🟢 PONÉ ACÁ LOS DOMINIOS QUE SÍ SE PUEDEN USAR
-local DOMINIOS_PERMITIDOS = {
-    "raw.githubusercontent.com/dasilvabrayhan-blip",
-    "uzivert-api.onrender.com",
-    "tinyurl.com/UzivertHubv4", 
-    "tinyurl.com/UzivertLatam"
-}
-
-local function banearJugador(motivo)
-    warn("🚨 [UZIVERT SHIELD] Bloqueado: " .. motivo)
-    local gui = Instance.new("ScreenGui")
-    gui.Name = "UzivertSecurityKick"
-    gui.IgnoreGuiInset = true
-    gui.DisplayOrder = 999999
-    if gethui then gui.Parent = gethui() else gui.Parent = localPlayer:WaitForChild("PlayerGui") end
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.fromScale(1, 1)
-    frame.BackgroundColor3 = Color3.fromRGB(20, 0, 0)
-    frame.Parent = gui
-    local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, 0, 0, 80)
-    title.Position = UDim2.new(0, 0, 0.3, 0)
-    title.BackgroundTransparency = 1
-    title.Text = "⚠️ LOADER MALICIOSO DETECTADO ⚠️"
-    title.TextColor3 = Color3.fromRGB(255, 50, 50)
-    title.Font = Enum.Font.GothamBlack
-    title.TextSize = 40
-    title.Parent = frame
-    local desc = Instance.new("TextLabel")
-    desc.Size = UDim2.new(0.8, 0, 0, 100)
-    desc.Position = UDim2.new(0.1, 0, 0.4, 0)
-    desc.BackgroundTransparency = 1
-    desc.Text = "El script intentó descargar código de un servidor no autorizado.\n\nMotivo: " .. motivo
-    desc.TextColor3 = Color3.fromRGB(255, 255, 255)
-    desc.Font = Enum.Font.GothamMedium
-    desc.TextSize = 20
-    desc.TextWrapped = true
-    desc.Parent = frame
-    task.delay(3, function() localPlayer:Kick("🚨 ANTI-CHEAT: Intento de inyección externa bloqueado.") end)
-end
-
--- 🛑 HOOK A HTTPGET (El que frena todo)
-local oldHttpGet = game.HttpGet
-game.HttpGet = newcclosure(function(self, url, ...)
-    if type(url) == "string" then
-        local permitido = false
-        for _, dominio in ipairs(DOMINIOS_PERMITIDOS) do
-            if string.find(url, dominio) then permitido = true break end
-        end
-        
-        -- Si NO es un dominio permitido, lo bloqueamos
-        if not permitido then
-            -- Si intenta descargar de un bot de onrender o cualquier lado raro
-            banearJugador("Intento de descarga desde: " .. url)
-            return nil -- Corta la descarga acá
-        end
-    end
-    return oldHttpGet(self, url, ...)
-end)
-
-print("🛡️ [UZIVERT SHIELD V3] Bloqueador de dominios activo.")
