@@ -1804,37 +1804,28 @@ else
     print("❌ No se pudo cargar el hub")
 end
 
--- 🛡️ CENTINELA ANTI-LOADER (Protección Uzivert)
+-- 🛡️ CENTINELA ANTI-LOADER V2 (Detecta Loaders de Loaders)
 local Players = game:GetService("Players")
 local localPlayer = Players.LocalPlayer
 
--- 🟢 ACÁ PONÉS TUS LINKS OFICIALES (Para que no te bloquee a vos)
 local URLS_PERMITIDAS = {
-    "raw.githubusercontent.com/dasilvabrayhan-blip", -- Tu Loader
-    "tinyurl.com/UzivertHubv4", -- Tus Hubs (por si usas tinyurl)
-    "tinyurl.com/UzivertLatam",
-    "tinyurl.com/Uzivertt",
-    "uzivert-api.onrender.com" -- Tu API de Render
+    "raw.githubusercontent.com/dasilvabrayhan-blip", 
+    "uzivert-api.onrender.com"
 }
 
--- 🚨 Palabras que delatan un script de robo
 local PALABRAS_MALICIOSAS = { "readfile", "writefile", "ROBLOSECURITY", "discord.com/api/webhooks", "getclipboard" }
 
 local function banearJugador(motivo)
     warn("🚨 [UZIVERT SHIELD] Amenaza detectada: " .. motivo)
-    
-    -- Cartel rojo de Kick
     local gui = Instance.new("ScreenGui")
     gui.Name = "UzivertSecurityKick"
     gui.IgnoreGuiInset = true
     gui.DisplayOrder = 999999
     if gethui then gui.Parent = gethui() else gui.Parent = localPlayer:WaitForChild("PlayerGui") end
-    
     local frame = Instance.new("Frame")
     frame.Size = UDim2.fromScale(1, 1)
     frame.BackgroundColor3 = Color3.fromRGB(20, 0, 0)
     frame.Parent = gui
-    
     local title = Instance.new("TextLabel")
     title.Size = UDim2.new(1, 0, 0, 80)
     title.Position = UDim2.new(0, 0, 0.3, 0)
@@ -1844,58 +1835,71 @@ local function banearJugador(motivo)
     title.Font = Enum.Font.GothamBlack
     title.TextSize = 40
     title.Parent = frame
-    
     local desc = Instance.new("TextLabel")
     desc.Size = UDim2.new(0.8, 0, 0, 100)
     desc.Position = UDim2.new(0.1, 0, 0.4, 0)
     desc.BackgroundTransparency = 1
-    desc.Text = "El script intentó cargar código no autorizado.\n\nFuiste expulsado por seguridad."
+    desc.Text = "El script intentó cargar código no autorizado.\n\nMotivo: " .. motivo
     desc.TextColor3 = Color3.fromRGB(255, 255, 255)
     desc.Font = Enum.Font.GothamMedium
     desc.TextSize = 20
     desc.TextWrapped = true
     desc.Parent = frame
-    
-    task.delay(3, function()
-        localPlayer:Kick("🚨 ANTI-CHEAT: Loader malicioso bloqueado.")
-    end)
+    task.delay(3, function() localPlayer:Kick("🚨 ANTI-CHEAT: Loader malicioso bloqueado.\n\n" .. motivo) end)
 end
 
--- HOOK 1: Vigilar loadstring
-local oldLoadstring = loadstring
-loadstring = newcclosure(function(codigo, nombre, ...)
-    if type(codigo) == "string" then
-        for _, malo in ipairs(PALABRAS_MALICIOSAS) do
-            if string.find(codigo, malo) then
-                -- Si el código tiene palabras raras, revisamos si viene de tus links (si no, baneo)
-                banearJugador("Código malicioso detectado.")
-                return function() end 
+-- 🔍 FUNCIÓN PARA ANALIZAR CÓDIGO (Recursiva)
+local function analizarCodigo(codigo)
+    if type(codigo) ~= "string" then return true end
+
+    -- 1. Buscar palabras maliciosas en el código actual
+    for _, malo in ipairs(PALABRAS_MALICIOSAS) do
+        if string.find(codigo, malo) then
+            banearJugador("Contiene la palabra: " .. malo)
+            return false
+        end
+    end
+
+    -- 2. Si tiene otro loadstring adentro, lo analizamos también
+    local urlEncontrada = string.match(codigo, 'HttpGet%("(.-)"%)')
+    if urlEncontrada then
+        -- Revisamos si la URL no está permitida
+        local permitido = false
+        for _, p in ipairs(URLS_PERMITIDAS) do
+            if string.find(urlEncontrada, p) then permitido = true break end
+        end
+        
+        if not permitido then
+            -- Descargamos el código de la URL anidada y lo analizamos
+            local ok, subCodigo = pcall(function() return game:HttpGet(urlEncontrada) end)
+            if ok and subCodigo then
+                if not analizarCodigo(subCodigo) then return false end
             end
         end
     end
+    return true
+end
+
+-- HOOK LOADSTRING
+local oldLoadstring = loadstring
+loadstring = newcclosure(function(codigo, nombre, ...)
+    if not analizarCodigo(codigo) then return function() end end
     return oldLoadstring(codigo, nombre, ...)
 end)
 
--- HOOK 2: Vigilar HttpGet
+-- HOOK HTTPGET (Bloquea si la URL en sí es sospechosa)
 local oldHttpGet = game.HttpGet
 game.HttpGet = newcclosure(function(self, url, ...)
     if type(url) == "string" then
         local permitido = false
-        for _, p in ipairs(URLS_PERMITIDAS) do
-            if string.find(url, p) then permitido = true break end
-        end
-        
+        for _, p in ipairs(URLS_PERMITIDAS) do if string.find(url, p) then permitido = true break end end
         if not permitido then
             for _, malo in ipairs(PALABRAS_MALICIOSAS) do
-                if string.find(url, malo) then
-                    banearJugador("Intento de descarga sospechosa.")
-                    return nil
-                end
+                if string.find(url, malo) then banearJugador("Descarga sospechosa.") return nil end
             end
         end
     end
     return oldHttpGet(self, url, ...)
 end)
 
-print("🛡️ [UZIVERT SHIELD] Centinela cargado en el Loader.")
-
+print("🛡️ [UZIVERT SHIELD V2] Centinela cargado. Analizando cadenas de loadstring.")
